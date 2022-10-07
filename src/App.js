@@ -1,91 +1,74 @@
-import React, { useRef, useState } from 'react';
-import { Link, NavLink, Route, Routes, useNavigate } from 'react-router-dom';
-import TodoList from './TodoList';
-import TodoWrite from './TodoWrite';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavLink, Route, Routes } from 'react-router-dom';
+
+import List from './Board/List';
+import Modify from './Board/Modify';
+import View from './Board/View';
+import Write from './Board/Write';
+
+import './reset.css'
 
 const App = () => {
-    const [word, setWord] = useState({});
-    const [list, setList] = useState([]); // 배열이 아니면 error가 뜸
-
-    const num = useRef(1); //전 생애 주기를 통해서 불변하지 않는다?
-    const inputTitle = useRef(null);
-    const inputContent = useRef(null);
-
-    const navi = useNavigate();
-
-    const handlerWord = e => {
-        const { name, value } = e.target; // 객체 비구조할당(이름이 중요)
-        setWord({
-            ...word,
-            [name]: value,
-            id: num.current
-        })
-    }
-
-    const hg = /^[ㄱ-ㅎ가-힣]*$/; //한글만 되도록
-
-    const handlerList = () => {
-        // if (!word.title || !word.content) {
-        //     alert('내용 입력')
-        //     return
-        // }
-        if (word.title.length < 5) {
-            alert('더 입력 더 입력');
-            // 1. 입력창을 비운다.  2. 그 입력창에 포커스를 준다.
-            setWord({
-                ...word,
-                title: "", // 1. 입력창을 비운다.
-            });
-            inputTitle.current.focus(); // 2. 입력창에 포커스를 준다.
-            return
+    const [input, setInput] = useState({});
+    const [boardList, setBoardlist] = useState(
+        () => {
+            const list = localStorage.getItem('list');
+            if (list) {
+                return JSON.parse(list);
+            } else {
+                return []
+            }
         }
-        if (!hg.test(word.title)) {
-            alert('한글만 입력');
-            // 1. 입력창을 비운다.  2. 그 입력창에 포커스를 준다.
-            setWord({
-                ...word,
-                title: "", // 1. 입력창을 비운다.
-            });
-            inputTitle.current.focus(); // 2. 입력창에 포커스를 준다.
-            return
-        }
-        if (word.content.length < 5) {
-            alert('더 입력 더 입력');
-            // 1. 입력창을 비운다.  2. 그 입력창에 포커스를 준다.
-            setWord({
-                ...word,
-                content: "", // 1. 입력창을 비운다.
-            });
-            inputContent.current.focus(); // 2. 입력창에 포커스를 준다.
-            return
-        }
-        setList([...list, word]);
-        setWord({
-            title: "",
-            content: "",
-        })
-        num.current++   // = num.current = num.current + 1
-        navi('/Board')
-    }
+    );
+    // JSON.parse(localStorage.getItem('list'))
+    // 배열이 아니어서 작동이 안됨...
+
+    // useEffect(() => {
+    //     setBoardlist(JSON.parse(localStorage.getItem('list')))
+    // }, [])
+
+    useEffect(() => {
+        localStorage.setItem('list', JSON.stringify(boardList))
+    }, [boardList])
+
+    const id = useRef(1);
     return (
         <div>
-            <nav>
-                <NavLink to='/'>home</NavLink>
-                <NavLink to='/Board'>Board</NavLink>
-                <NavLink to='/Wirte'>Wirte</NavLink>
-            </nav>
+            <header>
+                <nav>
+                    <ul>
+                        <li><NavLink to='/'>HOME</NavLink></li>
+                        <li><NavLink to='/board'>BOARD</NavLink></li>
+                        <li><NavLink to='/view'>VIEW</NavLink></li>
+                        <li><NavLink to='/write'>WRITE</NavLink></li>
+                    </ul>
+                </nav>
+                {/* <button onClick={
+                    () => localStorage.setItem('list', JSON.stringify(boardList))}>LocalStorage Write</button>
+                <button onClick={() => console.log(JSON.parse(localStorage.getItem('list')))}>LocalStorage get</button> */}
+            </header>
             <Routes>
-                <Route path='/' element={<TodoList list={list} setList={setList} />} />
-                <Route path='/Board' element={<TodoList list={list} setList={setList} />} />
-                <Route path='/Wirte' element={<TodoWrite list={list} word={word} handlerWord={handlerWord} handlerList={handlerList} inputTitle={inputTitle} inputContent={inputContent} setList={setList} />} />
+                <Route path='/' element={<div>HOME</div>} />
+                {/* List 클릭하면 View가 보이게 */}
+                <Route path='/board' element={<List boardList={boardList} />} />
+                <Route path='/view/:id' element={<View boardList={boardList} setBoardlist={setBoardlist} />} />
+                <Route path='/modify/:id' element={<Modify boardList={boardList} setBoardlist={setBoardlist} />} />
+                <Route path='/write' element={<Write input={input} setInput={setInput} boardList={boardList} setBoardlist={setBoardlist} id={id} />} />
             </Routes>
-
-        </div>
+            {console.log(input)}
+        </div >
     )
 }
 
 export default App;
 
-// 객체 형식은 { key: value }
-// ...word, [e.target.name]: e.target.value 이렇게 쓰면 title과 content가 같이 찍힘
-// setList([...list, word]) ...List를 해줘야, 누적되어 적힌다.
+// <input name='name' onChange={() => setInput('apple')} value= /> name과 value는 한 쌍]
+// <input name='name' onChange={e => setInput({ ...input👉2개의 input을 만들고 싶을 때 추가해줘야함, [e.target.name]: e.target.value })} />
+// <textarea name='content' onChange={e => setInput({ ...input, [e.target.name]: e.target.value })} />
+
+// textarea 텍스트 내용량에 따라서 박스 사이즈가 유연하게 늘어남
+
+// NavLink는 active가 붙어서 현재 페이지 표시가 가능함
+
+// JSON.stringify(boardList)) 문자열로 만들어서 가지고 와서 우리가 쓸 수 있는 객체로 바꾸는 것.
+// JSON.parse() 문자열을 구분하고, 객체를 생성?
